@@ -54,9 +54,9 @@ print(result.spot_summary)
 ```
 
 > **Note:**
-> * **Filter spot area (`spot_area_mm2`):** Defaults to the standard PSAP nominal spot area of `17.81 mm²` (4.76 mm diameter). For Dome C, use `AbsorptionConfig.dome_c_default()` (`18.9 mm²`, 4.9 mm diameter; Virkkula et al., 2022) or pass a custom `spot_area_mm2` parameter.
-> * **Temporal resolution (`resolution`):** Defaults to `"1h"` (hourly counter-integrated inversion, matching the 1-hour grid expected by `process_l1_5_to_l2`). Pass `resolution="1m"` if 1-minute absorption output is needed.
-> 
+> - **Filter spot area (`spot_area_mm2`):** Defaults to the nominal PSAP spot area of `17.81 mm²` (4.76 mm diameter). For Dome C, use `AbsorptionConfig.dome_c_default()` (`18.9 mm²`, 4.9 mm diameter; Virkkula et al., 2022) or pass a custom `spot_area_mm2` value.
+> - **Clean-filter baseline ($r_0$ at $t_0$):** Rather than relying on a single noisy minute immediately after a filter change, each spot's baseline ratio $r_0$ is phase-locked to the firmware transmittance using the median of $(\Delta I_{\mathrm{sample}} / \Delta I_{\mathrm{ref}}) / T_{r,\mathrm{firmware}}$ across stable minutes ($0.70 \le T_r \le 1.02$, $|\Delta T_r| \le 0.002$) within that `spot_id`.
+> - **Temporal resolution (`resolution`):** Defaults to `"1h"`, implementing the $\Delta t = 60\ \mathrm{min}$ detector-count integration method of Virkkula et al. (2022, Eq. 10) to avoid 1-second/1-minute digitization noise at low absorption levels. All valid modulo-$2^{40}$ A/D counter deltas within each clock hour (`closed="left"`, requiring $\ge 30$ valid minutes) are accumulated, and $\sigma_0$ is computed from the logarithmic attenuation between consecutive hourly bins ($\Delta t = 60\ \mathrm{min}$) using their mean flow rate. Pass `resolution="1m"` if 1-minute output is needed.
 > 
 
 ## Station-specific calibration and screening
