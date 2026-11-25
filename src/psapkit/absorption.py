@@ -20,7 +20,7 @@ VIRKKULA2010_K: dict[str, tuple[float, float]] = {
 
 @dataclass(frozen=True)
 class AbsorptionConfig:
-    spot_area_mm2: float = 18.9
+    spot_area_mm2: float = 17.81
     min_spot_separation_hours: float = 3.0
     spot_jump_threshold: float = 0.03
     loading_correction: Literal["bond1999", "virkkula2010", "none"] = "bond1999"
@@ -28,6 +28,11 @@ class AbsorptionConfig:
     bond_k2: float = 1.0227
     virkkula_k: dict[str, tuple[float, float]] | None = None
     min_flow_lpm: float = 0.5
+
+    @classmethod
+    def dome_c_default(cls) -> "AbsorptionConfig":
+        """Return the Dome C preset with empirical effective spot area 18.9 mm^2."""
+        return cls(spot_area_mm2=18.9)
 
 
 def _add_spot_tracking(df: pl.DataFrame, cfg: AbsorptionConfig) -> pl.DataFrame:
@@ -240,10 +245,10 @@ def _apply_loading_correction(df: pl.DataFrame, cfg: AbsorptionConfig) -> pl.Dat
     return df.with_columns(exprs) if exprs else df
 
 
-def compute_psap_absorption(df: pl.DataFrame, spot_area_mm2: float = 18.9,
-                            resolution: Literal["1m", "1h"] = "1m",
+def compute_psap_absorption(df: pl.DataFrame, spot_area_mm2: float = 17.81,
+                            resolution: Literal["1m", "1h"] = "1h",
                             config: AbsorptionConfig | None = None) -> pl.DataFrame:
-    """Compute counter-derived Tr and Beer-Lambert absorption at 1m or 1h."""
+    """Compute counter-derived Tr and Beer-Lambert absorption at 1h (default) or 1m."""
     if resolution not in {"1m", "1h"}:
         raise ValueError("resolution must be '1m' or '1h'")
     if df.is_empty():
@@ -271,8 +276,11 @@ def compute_psap_absorption(df: pl.DataFrame, spot_area_mm2: float = 18.9,
 
 def process_l1_to_l1_5(df_l1: pl.DataFrame, absorption_config: AbsorptionConfig | None = None,
                        flow_config=None, output_path=None,
-                       resolution: Literal["1m", "1h"] = "1m") -> pl.DataFrame:
+                       resolution: Literal["1m", "1h"] = "1h",
+                       spot_area_mm2: float | None = None) -> pl.DataFrame:
     """Create optical L1.5 and optional flow-corrected fields."""
+    if absorption_config is None and spot_area_mm2 is not None:
+        absorption_config = AbsorptionConfig(spot_area_mm2=spot_area_mm2)
     result = compute_psap_absorption(df_l1, resolution=resolution, config=absorption_config)
     if flow_config is not None:
         from .calibration import apply_flow_calibration

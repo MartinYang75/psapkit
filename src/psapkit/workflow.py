@@ -36,7 +36,8 @@ def run_psap_workflow(raw_input, meteo_df: pl.DataFrame | None = None,
                       output_dir: str | Path | None = None,
                       save_intermediates: bool = False,
                       file_format: str = "parquet",
-                      resolution: str = "1m") -> WorkflowResult:
+                      resolution: str = "1h",
+                      spot_area_mm2: float | None = None) -> WorkflowResult:
     """Process raw telemetry to L2, optionally exporting every stage."""
     if file_format not in {"parquet", "csv"}:
         raise ValueError("file_format must be 'parquet' or 'csv'")
@@ -47,7 +48,8 @@ def run_psap_workflow(raw_input, meteo_df: pl.DataFrame | None = None,
     l1_5 = process_l1_to_l1_5(l1, absorption_config=absorption_config,
                               flow_config=flow_config or FlowCalibrationConfig.dome_c_default(),
                               output_path=output("l1_5"),
-                              resolution=resolution)
+                              resolution=resolution,
+                              spot_area_mm2=spot_area_mm2)
     l2 = process_l1_5_to_l2(l1_5, meteo_df=meteo_df, config=screening_config,
                             output_path=output("l2"))
     return WorkflowResult(l1=l1, l1_5=l1_5, l2=l2, spot_summary=_spot_summary(l1_5))

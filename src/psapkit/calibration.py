@@ -94,7 +94,7 @@ def apply_flow_calibration(df: pl.DataFrame, config: FlowCalibrationConfig) -> p
 
 def process_l1_to_l1_5(df_l1: pl.DataFrame, absorption_config=None,
                        flow_config: FlowCalibrationConfig | None = None, output_path=None,
-                       resolution: str = "1m") -> pl.DataFrame:
+                       resolution: str = "1h", spot_area_mm2: float | None = None) -> pl.DataFrame:
     from .absorption import process_l1_to_l1_5 as _process_l1_to_l1_5
     return _process_l1_to_l1_5(
         df_l1,
@@ -102,4 +102,5 @@ def process_l1_to_l1_5(df_l1: pl.DataFrame, absorption_config=None,
         flow_config=flow_config,
         output_path=output_path,
         resolution=resolution,
+        spot_area_mm2=spot_area_mm2,
     )

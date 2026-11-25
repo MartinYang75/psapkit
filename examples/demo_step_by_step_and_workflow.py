@@ -30,11 +30,11 @@ def main() -> None:
     # packet, then exercise the optical API on real data produced below.
     print(decode_psap_hex("01,100,200,10,0"))
 
-    # 2. Explicit Raw -> L1 -> L1.5 -> L2 stages, saving each intermediate.
+    # 2. Explicit Raw -> L1 -> L1.5 -> L2 stages (default 1h resolution).
     l1 = process_raw_to_l1(RAW, output_path=OUT / "l1.parquet")
     l1_5 = process_l1_to_l1_5(
         l1,
-        absorption_config=AbsorptionConfig(loading_correction="bond1999"),
+        absorption_config=AbsorptionConfig.dome_c_default(),
         flow_config=FlowCalibrationConfig.disabled(),
         output_path=OUT / "l1_5.parquet",
     )
@@ -50,11 +50,14 @@ def main() -> None:
     l2 = process_l1_5_to_l2(l1_5, config=site_config, output_path=OUT / "l2.parquet")
     print("Stepwise shapes:", l1.shape, l1_5.shape, l2.shape)
 
-    # 3. One-call workflow at 1h resolution (matches multi-year hourly L2 pipeline).
+    # 3. One-call workflow using Dome C spot area & flow calibration at default 1h resolution.
     result = run_psap_workflow(
-        RAW, flow_config=FlowCalibrationConfig.dome_c_default(),
-        screening_config=site_config, output_dir=OUT / "workflow",
-        save_intermediates=True, resolution="1h",
+        RAW,
+        absorption_config=AbsorptionConfig.dome_c_default(),
+        flow_config=FlowCalibrationConfig.dome_c_default(),
+        screening_config=site_config,
+        output_dir=OUT / "workflow",
+        save_intermediates=True,
     )
     print("Workflow shapes:", result.l1.shape, result.l1_5.shape, result.l2.shape)
     print(result.spot_summary)

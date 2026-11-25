@@ -6,9 +6,9 @@ import polars as pl
 import pytest
 
 from psapkit import (
-    FlowCalibrationConfig, FlowSegment, ScreeningConfig, compute_psap_absorption,
-    decode_psap_hex, detect_rapid_transients, process_l1_5_to_l2,
-    process_l1_to_l1_5, process_raw_to_l1, run_psap_workflow,
+    AbsorptionConfig, FlowCalibrationConfig, FlowSegment, ScreeningConfig,
+    compute_psap_absorption, decode_psap_hex, detect_rapid_transients,
+    process_l1_5_to_l2, process_l1_to_l1_5, process_raw_to_l1, run_psap_workflow,
 )
 from psapkit.absorption import MOD_40BIT
 
@@ -57,12 +57,12 @@ def l1_frame(n=20):
 
 
 def test_spot_absorption_and_flow_calibration():
-    output = process_l1_to_l1_5(l1_frame(), flow_config=FlowCalibrationConfig.disabled())
+    output = process_l1_to_l1_5(l1_frame(), flow_config=FlowCalibrationConfig.disabled(), resolution="1m")
     assert "spot_id" in output.columns
     assert "tr_recomputed_green" in output.columns
     assert "sigma_0_green" in output.columns
     custom = FlowCalibrationConfig(segments=(FlowSegment(datetime(2019, 1, 1), 1., 0.),))
-    calibrated = process_l1_to_l1_5(l1_frame(), flow_config=custom)
+    calibrated = process_l1_to_l1_5(l1_frame(), flow_config=custom, resolution="1m")
     assert calibrated["fq"][1] == pytest.approx(1.)
 
 
@@ -72,14 +72,14 @@ def test_flow_regime_and_q_corrected_alias_and_screen_flag():
     default_all = FlowCalibrationConfig.dome_c_default(regime="all")
     assert default_gt05.regime == "gt05"
     assert default_all.regime == "all"
-    calibrated = process_l1_to_l1_5(raw, flow_config=default_all)
+    calibrated = process_l1_to_l1_5(raw, flow_config=default_all, resolution="1m")
     assert "flow_lpm_q_corrected" in calibrated.columns
     flagged = process_l1_5_to_l2(calibrated, config=ScreeningConfig(min_flow_lpm=.9, enable_transient_screening=False))
     assert flagged["flag_low_flow"].any()
 
 
 def test_l2_without_and_with_meteo():
-    stage = process_l1_to_l1_5(l1_frame(), flow_config=FlowCalibrationConfig.disabled())
+    stage = process_l1_to_l1_5(l1_frame(), flow_config=FlowCalibrationConfig.disabled(), resolution="1m")
     without = process_l1_5_to_l2(stage)
     assert not without["flag_wind_contam"].any()
     meteo = pl.DataFrame({"timestamp": stage["timestamp"], "wind_direction": [50.] * stage.height,
@@ -161,7 +161,7 @@ def test_workflow_end_to_end_three_raw_files(tmp_path):
     text = "\n".join(raw_lines)
     for index in range(3):
         (tmp_path / f"sample_{index}.raw").write_text(text, encoding="latin-1")
-    result = run_psap_workflow(tmp_path, flow_config=FlowCalibrationConfig.disabled())
+    result = run_psap_workflow(tmp_path, flow_config=FlowCalibrationConfig.disabled(), resolution="1m")
     assert result.l1.height == result.l1_5.height == result.l2.height == 20
     assert "flag_rapid_transient" in result.l2.columns
 
@@ -173,7 +173,7 @@ def test_workflow_end_to_end_filelike():
                                 (2, "02,10,20,03,00"), (3, "03,10,20,03,00"),
                                 (4, "04,00,10,20,30,40")]:
             raw.append(f'2020-01-01 00:{minute:02d}:{second:02d} x 1 1 1 0.9 0.9 0.9 1 x x x "{payload}"')
-    result = run_psap_workflow(StringIO("\n".join(raw)), flow_config=FlowCalibrationConfig.disabled())
+    result = run_psap_workflow(StringIO("\n".join(raw)), flow_config=FlowCalibrationConfig.disabled(), resolution="1m")
     assert result.l1.height == 4
     assert "flag_clean_background" in result.l2.columns
 
@@ -207,7 +207,7 @@ def test_dome_c_flow_calibration_all_three_periods():
 
 
 def test_l1_5_bond1999_and_clean_background_subset():
-    result = run_psap_workflow(REAL_SAMPLES[0], resolution="1h")
+    result = run_psap_workflow(REAL_SAMPLES[0])
     assert result.l1_5.height == 24
     assert "sigma_b1999_green_q_corrected" in result.l1_5.columns
     assert "flag_has_psap" in result.l2.columns
@@ -215,3 +215,29 @@ def test_l1_5_bond1999_and_clean_background_subset():
     # flag_clean_background must always be a subset of flag_base_candidate
     invalid_clean = result.l2.filter(pl.col("flag_clean_background") & (~pl.col("flag_base_candidate")))
     assert invalid_clean.height == 0
+
+
+def test_default_spot_area_dome_c_preset_and_hourly_default():
+    assert AbsorptionConfig().spot_area_mm2 == pytest.approx(17.81)
+    assert AbsorptionConfig.dome_c_default().spot_area_mm2 == pytest.approx(18.9)
+
+    l1 = process_raw_to_l1(REAL_SAMPLES[0])
+    hourly_default = compute_psap_absorption(l1)
+    assert hourly_default.height == 24
+
+    l15_default = process_l1_to_l1_5(l1)
+    l15_manual = process_l1_to_l1_5(l1, spot_area_mm2=18.9)
+    l15_preset = process_l1_to_l1_5(l1, absorption_config=AbsorptionConfig.dome_c_default())
+    assert l15_default.height == l15_manual.height == l15_preset.height == 24
+
+    ratio = (l15_manual["sigma_0_green"] / l15_default["sigma_0_green"]).drop_nulls()
+    assert all(val == pytest.approx(18.9 / 17.81) for val in ratio.to_list())
+    assert l15_manual["sigma_0_green"].drop_nulls().to_list() == pytest.approx(
+        l15_preset["sigma_0_green"].drop_nulls().to_list()
+    )
+
+    wf_default = run_psap_workflow(REAL_SAMPLES[0], spot_area_mm2=18.9)
+    assert wf_default.l1_5.height == 24
+    assert wf_default.l1_5["sigma_0_green"].drop_nulls().to_list() == pytest.approx(
+        l15_preset["sigma_0_green"].drop_nulls().to_list()
+    )
