@@ -1,17 +1,11 @@
 # psapkit
 
-`psapkit` is a lightweight, station-independent Python toolkit for three-band Particle Soot Absorption Photometer (PSAP) data. It provides pure-Python telemetry decoding, raw `.raw`/`.ra5` ingestion, filter-spot tracking, firmware-anchored transmittance recalculation, Beer–Lambert absorption inversion, configurable flow calibration, and non-destructive quality flags. The core package does not require plotting or tabular-data frameworks such as pandas.
+`psapkit` is a Python toolkit for three-band Particle Soot Absorption Photometer (PSAP) data. It provides pure-Python telemetry decoding, raw `.raw`/`.ra5` ingestion, filter-spot tracking, firmware-anchored transmittance recalculation, Beer–Lambert absorption inversion, configurable flow calibration, and non-destructive quality flags. The core package does not require plotting or tabular-data frameworks such as pandas.
 
 ## Install
 
 ```bash
 pip install psapkit
-```
-
-For development and release checks:
-
-```bash
-pip install "psapkit[dev]"
 ```
 
 ## Quick start
@@ -63,11 +57,12 @@ print(result.spot_summary)
 
 Optional stage outputs accept `.parquet` and `.csv` paths. The optional meteorology module includes UV wind decomposition and hourly aggregation.
 
-## Scientific references
+## References
 
 - Bond, T. C., Anderson, T. L., and Campbell, D. (1999). Calibration and intercomparison of filter-based measurements of visible light absorption by aerosols. *Aerosol Science and Technology*, 30, 582–600. https://doi.org/10.1080/027868299304435
-- Virkkula, A. (2010). Correction of the calibration of the 3-wavelength particle soot absorption photometer (3λ PSAP). *Aerosol Science and Technology*, 44, 706–712. https://doi.org/10.1080/02786826.2010.482110
-- Virkkula, A. et al. (2022). Aerosol light absorption at Dome C, Antarctica. *Atmospheric Chemistry and Physics*. (Use the journal record for final citation metadata.)
+- Virkkula, A., Ahlquist, N. C., Covert, D. S., Arnott, W. P., Sheridan, P. J., Quinn, P. K., and Coffman, D. J. (2005). Modification, calibration and a field test of an instrument for measuring light absorption by particles. *Aerosol Science and Technology*, 39(1), 68–83. https://doi.org/10.1080/027868290901963
+- Virkkula, A. (2010). Correction of the calibration of the 3-wavelength particle soot absorption photometer (3λ PSAP). *Aerosol Science and Technology*, 44(8), 706–712. https://doi.org/10.1080/02786826.2010.482110
+- Virkkula, A., et al. (2022). Aerosol optical properties calculated from size distributions, filter samples and absorption photometer data at Dome C, Antarctica, and their relationships with seasonal cycles of sources. *Atmospheric Chemistry and Physics*, 22(7), 5033–5069.
 
 ## License
 
