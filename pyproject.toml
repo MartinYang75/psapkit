@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "psapkit"
+version = "0.1.0"
+description = "General-purpose three-band PSAP telemetry decoding and absorption processing"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [{name = "Wending Yang"}]
+keywords = ["PSAP", "aerosol", "light absorption", "atmospheric science"]
+classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License"]
+dependencies = ["polars>=1.0", "numpy>=1.24", "scipy>=1.10", "scikit-learn>=1.3", "metpy>=1.5"]
+
+[project.urls]
+Homepage = "https://github.com/MartinYang75/psapkit"
+Repository = "https://github.com/MartinYang75/psapkit"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "build>=1", "twine>=5"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/psapkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
