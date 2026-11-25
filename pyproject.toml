@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "psapkit"
-version = "0.1.0"
+version = "0.1.1"
 description = "General-purpose three-band PSAP telemetry decoding and absorption processing"
 readme = "README.md"
 requires-python = ">=3.10"
